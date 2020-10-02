@@ -4,7 +4,7 @@ const {JSDOM} = require('jsdom');
 
 let emails = new Set();
 const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi
-const url = 'https://www.canpitero.com';
+const url = 'yourURL';
 
 
 const fetchUrl = async () => {
