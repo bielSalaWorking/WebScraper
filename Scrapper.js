@@ -4,9 +4,11 @@ const {JSDOM} = require('jsdom');
 
 class Scrapper {
 
-  static dangerDomains = ['loan','work','biz','racing','ooo','life','ltd'];
+  static dangerDomains = ['loan','work','biz','racing','ooo','life','ltd','png'];
   static emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
   static domObject = null;
+  static internalLinks = new Set();
+  static externalLinks = new Set();
 
   constructor(url){
     this.url = url;
@@ -15,22 +17,33 @@ class Scrapper {
   }
   async executeScrapper() {
 
-      const fetchedData = await this.fetchUrl();
-      const emailsInDom = await this.searchForEmails();
+      const fetchedData = await this.fetchUrlAndGetDom(this.url);
+      const links = await this.getInternalLinks();
 
-      this.addEmails(emailsInDom);
-      this.validateEmails();
-      await this.writeFile();
+      const linksArray = Array.from(Scrapper.internalLinks);
 
-      return this.emails
+      await this.fetchInternalLinks(linksArray)
   }
-  async fetchUrl(){
-    try {
-      const response = await axios(this.url);
-      if(response.status === 200) {
-        const htmlData = await response.data;
+  async fetchInternalLinks(internalLink){
 
-        return Scrapper.domObject = new JSDOM(htmlData);
+    const result = await Promise.all(internalLink.map((link) => {
+         return this.fetchUrlAndGetDom(`${this.url}${link}`);
+    }));
+
+    let newResult = Array.from(result);
+    newResult.filter(el => el);
+    this.addEmails(newResult);
+
+  }
+  async fetchUrlAndGetDom(url){
+    try {
+      const response = await axios(url);
+      if(response.status === 200) {
+        let htmlData = await response.data;
+        Scrapper.domObject = await new JSDOM(htmlData);
+        let dades = this.searchForEmails();
+
+        return dades;
       }
       else if(response.status === 404) {
         console.log('this page doesnt exists')
@@ -41,19 +54,30 @@ class Scrapper {
         return process.exit(1);
     }
    }
+  getInternalLinks(){
+    let links = Scrapper.domObject.window.document.body;
+    links = links.querySelectorAll('a[href^="/"]');
+    Array
+      .from(links)
+      .filter(link => Scrapper.internalLinks.add(link.getAttribute('href')));
+  }
+  getExternalLinks(){
+    let links = Scrapper.domObject.window.document.body;
+    links = links.querySelectorAll('a[href^="http"]');
+    Array
+      .from(links)
+      .filter(link => Scrapper.externalLinks.add(link.getAttribute('href')));
+  }
+
  searchForEmails(){
    let emailsInDom = Scrapper.domObject.window.document.body.innerHTML;
    let emails = emailsInDom
                  .toString()
-                 .match(Scrapper.emailRegex);
+                 .match(Scrapper.emailRegex)
+   return emails;
 
-   if(emails == null) {
-     console.log('this page dont have any email')
-     return process.exit(1)
-   }
-   return emails
   }
-  validateEmails(){
+ validateEmails(){
     const validatedEmails = Array
                         .from(this.emails)
                         .filter(email => {
