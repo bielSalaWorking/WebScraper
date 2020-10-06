@@ -3,8 +3,9 @@ const fs = require('fs')
 const {JSDOM} = require('jsdom');
 
 class Scrapper {
+
   static dangerDomains = ['loan','work','biz','racing','ooo','life','ltd'];
-  static emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi
+  static emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
 
   constructor(url){
     this.url = url;
@@ -14,9 +15,12 @@ class Scrapper {
   async executeScrapper() {
 
       const fetchedData = await this.fetchUrl();
-      const emailsInDom = this.searchForEmails(fetchedData);
+      const emailsInDom = await this.searchForEmails(fetchedData);
+
       this.addEmails(emailsInDom);
-      const writeFile = await this.writeFile()
+      this.validateEmails();
+      await this.writeFile();
+
       return this.emails
   }
   async fetchUrl(){
@@ -27,26 +31,41 @@ class Scrapper {
 
         return htmlData;
       }
+      else if(response.status === 404) {
+        console.log('this page doesnt exists')
+        return process.exit(1);
+      }
     } catch (error) {
-      console.log(error)
+        console.log(error)
+        return process.exit(1);
     }
+   }
+
+  searchForEmails(htmlData){
+   const domData = new JSDOM(htmlData);
+   let emailsInDom = domData.window.document.body.innerHTML;
+
+   let emails = emailsInDom
+                 .toString()
+                 .match(Scrapper.emailRegex);
+
+   if(emails == null) {
+     console.log('this page dont have any email')
+     return process.exit(1)
+   }
+   return emails
   }
-   searchForEmails(htmlData){
-    const domData = new JSDOM(htmlData);
-    let emails = domData.window.document.body.innerHTML;
-    return emails
-      .toString()
-      .match(Scrapper.emailRegex);
-  }
-   validateEmails(){
-     const validatedEmails = this.emails.filter(el => {
-        let domainName = el.split('@')[1].split('.')[1];
-        if(Scrapper.dangerDomains.includes(domainName)){
-          this.dangerEmails.add(el);
-          this.emails.delete(el);
-        }
-        else return el;
-    });
+  validateEmails(){
+    const validatedEmails = Array.from(this.emails).filter(email => {
+       let domainName = email
+                        .split('@')[1]
+                        .split('.')[1];
+       if(Scrapper.dangerDomains.includes(domainName)){
+         this.dangerEmails.add(el);
+         this.emails.delete(el);
+       }
+       else return el;
+   });
   }
   async writeFile(){
     return new Promise((resolve, reject) => {
@@ -56,9 +75,8 @@ class Scrapper {
       });
     });
   }
-   addEmails(emailsInDom){
+  addEmails(emailsInDom){
     emailsInDom.filter(el => this.emails.add(el))
-    return this.emails;
   }
 }
 module.exports = Scrapper;
