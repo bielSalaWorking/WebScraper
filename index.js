@@ -1,6 +1,5 @@
 const Scrapper = require('./Scrapper');
 const scrapper = new Scrapper('https://www.k8oms.net/links/mailto-link');
-console.log(process.argv);
 
 (async () => {
   try {
@@ -10,5 +9,3 @@ console.log(process.argv);
     console.log(e)
   }
 })()
-
-//'https://www.k8oms.net/links/mailto-link'
