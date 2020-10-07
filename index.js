@@ -1,5 +1,5 @@
 const Scrapper = require('./Scrapper');
-const scrapper = new Scrapper('https://www.k8oms.net/links/mailto-link');
+const scrapper = new Scrapper('https://www.k8oms.net');
 
 (async () => {
   try {

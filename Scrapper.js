@@ -3,8 +3,7 @@ const fs = require('fs')
 const {JSDOM} = require('jsdom');
 
 class Scrapper {
-
-  static dangerDomains = ['loan','work','biz','racing','ooo','life','ltd','png'];
+  static dangerDomains = ['loan','work','biz','racing','ooo','life','ltd','png','calendar'];
   static emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
   static domObject = null;
   static internalLinks = new Set();
@@ -16,13 +15,16 @@ class Scrapper {
     this.dangerEmails = new Set();
   }
   async executeScrapper() {
+     const fetchedData = await this.fetchUrlAndGetDom(this.url);
+     const links = await this.getInternalLinks();
+     const linksArray = Array.from(Scrapper.internalLinks);
 
-      const fetchedData = await this.fetchUrlAndGetDom(this.url);
-      const links = await this.getInternalLinks();
+      const emails = await this.fetchInternalLinks(linksArray);
+      this.addEmails(emails);
+      this.validateEmails();
+      await this.writeFile();
 
-      const linksArray = Array.from(Scrapper.internalLinks);
-
-      await this.fetchInternalLinks(linksArray)
+     
   }
   async fetchInternalLinks(internalLink){
 
@@ -30,10 +32,7 @@ class Scrapper {
          return this.fetchUrlAndGetDom(`${this.url}${link}`);
     }));
 
-    let newResult = Array.from(result);
-    newResult.filter(el => el);
-    this.addEmails(newResult);
-
+    return result;
   }
   async fetchUrlAndGetDom(url){
     try {
@@ -84,6 +83,7 @@ class Scrapper {
        let domainName = email
                         .split('@')[1]
                         .split('.')[1];
+                        console.log(domainName)
        if(Scrapper.dangerDomains.includes(domainName)){
          this.dangerEmails.add(email);
          this.emails.delete(email);
@@ -100,7 +100,11 @@ class Scrapper {
     });
   }
   addEmails(emailsInDom){
-    emailsInDom.filter(el => this.emails.add(el))
+    Array.from(emailsInDom).filter(el => {
+      if(el !== null) {
+        el.filter(el => this.emails.add(el))
+      }
+    });
   }
 }
 module.exports = Scrapper;
