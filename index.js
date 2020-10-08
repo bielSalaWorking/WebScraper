@@ -1,10 +1,9 @@
-const Scrapper = require('./Scrapper');
-const scrapper = new Scrapper('https://www.k8oms.net');
-
+const Scraper = require('./Scraper');
 (async () => {
   try {
-    const dades = await scrapper.executeScrapper();
+    const scraper = new Scraper('https://www.k8oms.net')
 
+   await scraper.executeScraper();
   } catch (e) {
     console.log(e)
   }
